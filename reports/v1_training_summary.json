@@ -1,0 +1,39 @@
+{
+  "data_sha256": "cc78e092b8f7214d0ca6948419cc2983035f1504e5bd22260ab58d4def48410a",
+  "experiment_name": "mp044-milk-collection",
+  "registered_model_name": "mp044-milk-model",
+  "champion_version": 1,
+  "best_run_id": "f9e1201d5140428ba44e5c9638950e76",
+  "runs": [
+    {
+      "run_id": "f9e1201d5140428ba44e5c9638950e76",
+      "name": "linear_regression",
+      "mae_valid": 29.288701960522467,
+      "mae_train": 29.707247344430954
+    },
+    {
+      "run_id": "bdfd774d2a714383b76ee1f6c9cd0180",
+      "name": "ridge_alpha_1",
+      "mae_valid": 29.305364715217884,
+      "mae_train": 29.704624286936422
+    },
+    {
+      "run_id": "c58c32dc5673478a935f9fc21a60c5ff",
+      "name": "ridge_alpha_10",
+      "mae_valid": 29.513038385569562,
+      "mae_train": 29.740011263128864
+    },
+    {
+      "run_id": "c6fb2925faeb4b93bedf4cea6cde9e7b",
+      "name": "gradient_boosting",
+      "mae_valid": 35.2710655084642,
+      "mae_train": 19.871726178907704
+    },
+    {
+      "run_id": "4a240c589c1b4e239eadfec71161cb53",
+      "name": "random_forest",
+      "mae_valid": 44.844498953270595,
+      "mae_train": 22.090553178207703
+    }
+  ]
+}

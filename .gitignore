@@ -1,3 +1,14 @@
 __pycache__/
 .ipynb_checkpoints/
 *.pyc
+
+# Python virtual environments
+.venv/
+venv/
+
+# MLflow local artifact directories
+mlruns/
+mlartifacts/
+
+# Pytest cache
+.pytest_cache/

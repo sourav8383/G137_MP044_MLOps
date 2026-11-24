@@ -1,0 +1,61 @@
+# Settings for MP044 (G137). Read by src/mp044/config.py with yaml.safe_load.
+
+paths:
+  train: data/raw/train.csv
+  later: data/raw/later.csv
+  holdout: data/raw/holdout_features.csv
+  model_out: models/model.joblib
+
+data:
+  target: litres_per_day
+  date_column: date
+  numeric: [cows, buffaloes, fodder_price_rs, temp_c, vet_visits, feed_kg]
+  categorical: [breed_mix, village_cluster]
+  # Filled in only after the event -> not known at prediction time (Stage 1 finding)
+  leaking_columns: [litres_paid_in_passbook]
+
+# Values below come from the Stage 1 data audit (reports/findings.yaml)
+cleaning:
+  drop_duplicates: true
+  strip_text: [breed_mix, village_cluster]
+  lowercase_text: [breed_mix]
+  sentinel:
+    column: fodder_price_rs
+    value: -999
+  stuck_sensor:
+    column: cows
+    start_date: "2026-02-23"
+    end_date: "2026-03-18"
+
+training:
+  valid_fraction: 0.2     # last 20% of cleaned train.csv (by date) is the validation set
+  random_state: 42
+
+mlflow:
+  tracking_uri: sqlite:///mlflow.db
+  experiment_name: mp044-milk-collection
+  registered_model_name: mp044-milk-model
+  champion_alias: champion
+
+# One MLflow run per entry. Add or change entries to try other settings.
+experiments:
+  - name: linear_regression
+    model: linear_regression
+    scale: true
+    hyperparameters: {}
+  - name: ridge_alpha_1
+    model: ridge
+    scale: true
+    hyperparameters: {alpha: 1.0}
+  - name: ridge_alpha_10
+    model: ridge
+    scale: true
+    hyperparameters: {alpha: 10.0}
+  - name: random_forest
+    model: random_forest
+    scale: false
+    hyperparameters: {n_estimators: 200, min_samples_leaf: 3, n_jobs: -1}
+  - name: gradient_boosting
+    model: gradient_boosting
+    scale: false
+    hyperparameters: {n_estimators: 200, learning_rate: 0.05, max_depth: 3}
