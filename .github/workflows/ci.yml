@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: python -m pytest -v
+
+  docker-and-k8s:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t mp044-api:1.0.0 .
+      - uses: helm/kind-action@v1
+        with:
+          cluster_name: mp044
+      - name: Deploy to a temporary Kubernetes cluster
+        run: |
+          kind load docker-image mp044-api:1.0.0 --name mp044
+          kubectl apply -f k8s/
+          kubectl rollout status deployment/mp044-api --timeout=180s
+      - name: Smoke test
+        run: |
+          kubectl port-forward service/mp044-api 8000:80 &
+          sleep 5
+          curl --fail http://127.0.0.1:8000/health
+          curl --fail -X POST http://127.0.0.1:8000/predict \
+            -H "Content-Type: application/json" \
+            -d '{"cows":55,"buffaloes":146,"fodder_price_rs":18.0,"temp_c":28.9,"vet_visits":2,"feed_kg":2076,"breed_mix":"mixed","village_cluster":"Cluster A"}'
+      - name: Show pod logs if something failed
+        if: failure()
+        run: |
+          kubectl describe pods
+          kubectl logs -l app=mp044-api --tail=100

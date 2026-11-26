@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mp044-api
+  labels:
+    app: mp044-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mp044-api
+  template:
+    metadata:
+      labels:
+        app: mp044-api
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+      containers:
+        - name: api
+          image: mp044-api:1.0.0
+          imagePullPolicy: IfNotPresent   # use the locally loaded image
+          ports:
+            - containerPort: 8000
+          readinessProbe:
+            httpGet: {path: /health, port: 8000}
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: {path: /health, port: 8000}
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          resources:
+            requests: {cpu: 100m, memory: 256Mi}
+            limits: {cpu: 500m, memory: 512Mi}

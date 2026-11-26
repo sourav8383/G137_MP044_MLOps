@@ -1,0 +1,7 @@
+# Send only what the Dockerfile copies
+*
+!requirements-api.txt
+!params.yaml
+!src/
+!models/model.joblib
+**/__pycache__

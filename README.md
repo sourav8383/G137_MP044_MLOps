@@ -91,12 +91,53 @@ The Stage 2 test suite completed successfully:
 
 ### Stage 3 — Model Serving and Deployment
 
-Planned work includes:
-- FastAPI prediction service
-- Input validation
-- Docker containerization
-- Continuous integration
-- Kubernetes deployment
+| Part | Files |
+|---|---|
+| FastAPI prediction service | `src/mp044/api.py`, `src/mp044/serving.py` |
+| Input validation | `src/mp044/schemas.py` |
+| Docker | `Dockerfile`, `.dockerignore`, `requirements-api.txt` |
+| Continuous integration | `.github/workflows/ci.yml` |
+| Kubernetes | `k8s/deployment.yaml`, `k8s/service.yaml` |
+| Tests | `tests/test_serving.py`, `tests/test_api.py` |
+
+The API serves `models/model.joblib` (the promoted champion from Stage 4).
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/health` | 200 when the model is loaded, otherwise 503 |
+| GET | `/model-info` | Model file, SHA-256 and feature list |
+| POST | `/predict` | Prediction for one record |
+| POST | `/predict/batch` | Predictions for 1 to 1000 records |
+
+Invalid input returns HTTP 422: negative counts, unknown breed or cluster, missing fields, and extra fields such as the leaking column `litres_paid_in_passbook`. `fodder_price_rs` may be `null` or `-999` (treated as missing).
+
+**Run locally**
+
+```bash
+pip install -r requirements.txt
+uvicorn mp044.api:app --app-dir src --port 8000
+```
+
+Then open `http://127.0.0.1:8000/docs` and use **Try it out** on `/predict`.
+
+**Run with Docker**
+
+```bash
+docker build -t mp044-api:1.0.0 .
+docker run --rm -p 8000:8000 mp044-api:1.0.0
+```
+
+**Deploy on Kubernetes (minikube)**
+
+```bash
+minikube start
+minikube image load mp044-api:1.0.0
+kubectl apply -f k8s/
+kubectl rollout status deployment/mp044-api
+kubectl port-forward service/mp044-api 8000:80
+```
+
+**CI:** every push and pull request runs the tests, builds the image, deploys it to a temporary `kind` cluster and calls `/health` and `/predict`.
 
 ### Stage 4 — Monitoring and Retraining
 
@@ -248,7 +289,7 @@ The project is developed collaboratively, with responsibilities divided across t
 |---|---|
 | Stage 1 — Data Audit | Completed |
 | Stage 2 — Model Development and MLflow | Completed |
-| Stage 3 — Serving and Deployment | In progress / pending |
+| Stage 3 — Serving and Deployment | Implemented |
 | Stage 4 — Monitoring and Retraining | Completed (see results below) |
 
 ## Repository
