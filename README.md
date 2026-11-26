@@ -100,11 +100,20 @@ Planned work includes:
 
 ### Stage 4 — Monitoring and Retraining
 
-Planned work includes:
-- Data drift monitoring using PSI
-- Model performance evaluation
-- Retraining with later-period data
-- Holdout prediction and final evaluation
+Implemented in `src/mp044/monitoring.py` (pure helpers) and `src/mp044/monitor.py` (pipeline):
+- **Drift:** PSI (10 quantile bins of the cleaned `train.csv`) for the six numeric features against `later.csv`; the feature with the highest PSI is `most_drifted_feature`. Rule of thumb: <0.1 stable, 0.1-0.25 moderate, >0.25 major.
+- **Performance:** MAE of v1 on all of `later.csv`, per `village_cluster`; the cluster with the highest MAE is `worst_served_group`.
+- **Retraining:** v2 = same pipeline recipe as v1, fitted on cleaned train + the oldest 70% of `later.csv` (by date).
+- **Decision:** v1 and v2 are both scored on the newest 30% of `later.csv`; `promote` if v2 MAE is strictly lower, otherwise `keep`. A promoted v2 is registered in MLflow with the `champion` alias and replaces `models/model.joblib`.
+- **Holdout:** predictions from the winning model are written to `predictions/holdout_predictions.csv`.
+- Results are written to `reports/stage4_monitoring.json`, logged to MLflow, and copied into the `monitoring:` block of `findings.yaml`.
+
+Run (after `dvc pull` and Stage 2 training):
+
+```bash
+PYTHONPATH=src python -m mp044.monitor
+pytest
+```
 
 ## Technology Stack
 
@@ -230,7 +239,7 @@ The project is developed collaboratively, with responsibilities divided across t
 | Stage 1 — Data Audit | Completed |
 | Stage 2 — Model Development and MLflow | Completed |
 | Stage 3 — Serving and Deployment | In progress / pending |
-| Stage 4 — Monitoring and Retraining | Pending |
+| Stage 4 — Monitoring and Retraining | Code complete; run on real data to fill `findings.yaml` |
 
 ## Repository
 
