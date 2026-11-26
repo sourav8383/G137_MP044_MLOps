@@ -38,9 +38,10 @@ def test_split_check_is_by_date_70_30():
     assert a["date"].max() < b["date"].min()
 
 
-def test_decide():
-    assert mon.decide(30.0, 25.0) == "promote"
-    assert mon.decide(30.0, 30.0) == "keep"
+def test_decide_needs_8_percent_improvement():
+    assert mon.decide(30.0, 27.0) == "promote"   # 10% better
+    assert mon.decide(30.0, 27.6) == "promote"   # exactly 8% better
+    assert mon.decide(30.0, 28.5) == "keep"      # only 5% better
     assert mon.decide(30.0, 35.0) == "keep"
 
 
@@ -61,7 +62,7 @@ def test_run_end_to_end(params, tiny_train):
     assert monitoring["most_drifted_feature"] == "cows"
     assert set(monitoring["mae_by_group"]) == {"Cluster A", "Cluster B", "Cluster C"}
     assert monitoring["decision"] in ("promote", "keep")
-    assert len(preds) == 10 and preds["predicted_litres_per_day"].notna().all()
+    assert len(preds) == 10 and preds["prediction"].notna().all()
 
 
 def test_update_findings_keeps_other_keys(tmp_path):

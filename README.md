@@ -104,11 +104,21 @@ Implemented in `src/mp044/monitoring.py` (pure helpers) and `src/mp044/monitor.p
 - **Drift:** PSI (10 quantile bins of the cleaned `train.csv`) for the six numeric features against `later.csv`; the feature with the highest PSI is `most_drifted_feature`. Rule of thumb: <0.1 stable, 0.1-0.25 moderate, >0.25 major.
 - **Performance:** MAE of v1 on all of `later.csv`, per `village_cluster`; the cluster with the highest MAE is `worst_served_group`.
 - **Retraining:** v2 = same pipeline recipe as v1, fitted on cleaned train + the oldest 70% of `later.csv` (by date).
-- **Decision:** v1 and v2 are both scored on the newest 30% of `later.csv`; `promote` if v2 MAE is strictly lower, otherwise `keep`. A promoted v2 is registered in MLflow with the `champion` alias and replaces `models/model.joblib`.
-- **Holdout:** predictions from the winning model are written to `predictions/holdout_predictions.csv`.
+- **Decision:** v1 and v2 are both scored on the newest 30% of `later.csv`; `promote` only if v2's MAE is at least 8% lower than v1's (the client's rule), otherwise `keep`. v2 is always registered in MLflow (version 2); the `champion` alias moves to it only when promoted. A promoted v2 is registered in MLflow with the `champion` alias and replaces `models/model.joblib`.
+- **Holdout:** predictions from the winning model are written to `predictions/holdout_predictions.csv` (columns `record_id,prediction`).
 - Results are written to `reports/stage4_monitoring.json`, logged to MLflow, and copied into the `monitoring:` block of `findings.yaml`.
 
-Run (after `dvc pull` and Stage 2 training):
+**Stage 4 results (v1 = champion v1, v2 = train + first 70% of later.csv):**
+
+| Item | Value |
+|---|---|
+| Most drifted feature | `buffaloes` (PSI 4.276; every other feature below 0.07) |
+| v1 MAE on later.csv | Cluster A 61.61, Cluster B 59.61, Cluster C 342.43 |
+| Worst-served group | Cluster C |
+| MAE on last 30% of later.csv | v1 159.83, v2 97.43 (about 39% lower) |
+| Decision | promote v2 (champion version 2) |
+
+Run (after placing `train.csv` and `later.csv` in `data/raw/`):
 
 ```bash
 PYTHONPATH=src python -m mp044.monitor
@@ -239,7 +249,7 @@ The project is developed collaboratively, with responsibilities divided across t
 | Stage 1 — Data Audit | Completed |
 | Stage 2 — Model Development and MLflow | Completed |
 | Stage 3 — Serving and Deployment | In progress / pending |
-| Stage 4 — Monitoring and Retraining | Code complete; run on real data to fill `findings.yaml` |
+| Stage 4 — Monitoring and Retraining | Completed (see results below) |
 
 ## Repository
 

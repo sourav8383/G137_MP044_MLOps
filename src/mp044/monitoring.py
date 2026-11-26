@@ -60,6 +60,9 @@ def split_check(later, date_column, check_fraction=0.3):
     return later.iloc[:cut], later.iloc[cut:]
 
 
-def decide(mae_v1, mae_v2):
-    """promote v2 only if it is strictly better than v1 on the same check rows."""
-    return "promote" if mae_v2 < mae_v1 else "keep"
+PROMOTION_MARGIN = 0.08  # client rule: v2 must be at least 8% better than v1
+
+
+def decide(mae_v1, mae_v2, margin=PROMOTION_MARGIN):
+    """promote v2 only if its MAE is at least `margin` (8%) lower than v1's."""
+    return "promote" if mae_v2 <= mae_v1 * (1 - margin) else "keep"

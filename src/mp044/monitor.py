@@ -47,7 +47,7 @@ def run(params, train_raw, later_raw, holdout_raw, v1):
     hold = clean_features(holdout_raw, params)
     X_h = hold[d["numeric"] + d["categorical"]]
     preds = pd.DataFrame({"record_id": hold["record_id"],
-                          "predicted_litres_per_day": champion.predict(X_h).round(2)})
+                          "prediction": champion.predict(X_h).round(2)})
 
     monitoring = {
         "psi": psi_values,
@@ -96,12 +96,14 @@ def main():
         mlflow.log_metric("mae_v1_on_check", monitoring["mae_v1_on_check"])
         mlflow.log_metric("mae_v2_on_check", monitoring["mae_v2_on_check"])
         mlflow.sklearn.log_model(v2, name="model_v2", serialization_format="cloudpickle")
+        ver = mlflow.register_model(f"runs:/{run_.info.run_id}/model_v2",
+                                    m["registered_model_name"])
+        monitoring["v2_registered_version"] = int(ver.version)
         if monitoring["decision"] == "promote":
-            ver = mlflow.register_model(f"runs:/{run_.info.run_id}/model_v2",
-                                        m["registered_model_name"])
             MlflowClient().set_registered_model_alias(
                 m["registered_model_name"], m["champion_alias"], ver.version)
             monitoring["champion_version"] = int(ver.version)
+        monitoring["monitoring_run_id"] = run_.info.run_id
 
     (ROOT / "models").mkdir(exist_ok=True)
     joblib.dump(v2, ROOT / "models" / "model_v2.joblib")
@@ -111,7 +113,8 @@ def main():
     (ROOT / "predictions").mkdir(exist_ok=True)
     preds.to_csv(ROOT / "predictions" / "holdout_predictions.csv", index=False)
 
-    report = {k: v for k, v in monitoring.items() if k != "champion_version"}
+    extra = ("champion_version", "v2_registered_version", "monitoring_run_id")
+    report = {k: v for k, v in monitoring.items() if k not in extra}
     (ROOT / "reports").mkdir(exist_ok=True)
     (ROOT / "reports" / "stage4_monitoring.json").write_text(json.dumps(report, indent=2))
     update_findings(ROOT / "findings.yaml", report)
